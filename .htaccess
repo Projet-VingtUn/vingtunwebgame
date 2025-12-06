@@ -1,0 +1,3 @@
+<FilesMatch "\.unityweb$">
+   AddEncoding gzip .unityweb
+</FilesMatch>
