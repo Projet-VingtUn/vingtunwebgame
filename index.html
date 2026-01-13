@@ -72,9 +72,13 @@
 
 <script>
   function PrintToken_JS() {
-    var token = localStorage.getItem("token");
+
+    console.log("token brut =", localStorage.token);
+console.log("token type =", typeof localStorage.getItem("token"));
       console.log("objet",  Object.keys(localStorage));
     console.log("location.origin", location.origin);
+    var token = localStorage.getItem("token");
+
     console.log("[JS] token =", token); 
     return token;
   }
