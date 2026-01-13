@@ -25,6 +25,11 @@
     </div>
     <script>
       var canvas = document.querySelector("#unity-canvas");
+      var unityInstanceRef = null;
+
+      function getAuthToken() {
+  return localStorage.getItem("token");
+}
 
       // Shows a temporary message banner/ribbon for a few seconds, or
       // a permanent error message on top of the canvas if type=='error'.
@@ -110,12 +115,31 @@
         createUnityInstance(canvas, config, (progress) => {
           document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
               }).then((unityInstance) => {
-                document.querySelector("#unity-loading-bar").style.display = "none";
-                document.querySelector("#unity-fullscreen-button").onclick = () => {
-                  unityInstance.SetFullscreen(1);
-                };
+  unityInstanceRef = unityInstance;
 
-              }).catch((message) => {
+  document.querySelector("#unity-loading-bar").style.display = "none";
+  document.querySelector("#unity-fullscreen-button").onclick = () => {
+    unityInstance.SetFullscreen(1);
+  };
+
+  // 🔐 AUTO LOGIN
+  const token = getAuthToken();
+
+  if (token) {
+    console.log("Token trouvé, envoi à Unity");
+    unityInstance.SendMessage(
+      "AuthManager",      // GameObject
+      "OnReceiveToken",   // Méthode C#
+      token
+    );
+  } else {
+    console.log("Aucun token, affichage login");
+    unityInstance.SendMessage(
+      "AuthManager",
+      "ShowLogin"
+    );
+  }
+}).catch((message) => {
                 alert(message);
               });
             };
