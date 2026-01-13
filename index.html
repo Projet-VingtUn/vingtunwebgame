@@ -73,6 +73,37 @@
   }
 </script>
 
+<script>
+  // 🔁 Écoute quand le token arrive PLUS TARD
+  window.addEventListener("storage", function (e) {
+    if (e.key === "token" && e.newValue && unityInstanceRef) {
+      console.log("[JS] Token détecté via storage event");
+      unityInstanceRef.SendMessage(
+        "WebAutoLogin",
+        "OnReceiveToken",
+        e.newValue
+      );
+    }
+  });
+</script>
+
+<script>
+  function notifyUnityTokenChanged() {
+    if (!unityInstanceRef) return;
+
+    var token = localStorage.getItem("token");
+    if (token) {
+      console.log("[JS] Token détecté (manual notify)");
+      unityInstanceRef.SendMessage(
+        "WebAutoLogin",
+        "OnReceiveToken",
+        token
+      );
+    }
+  }
+</script>
+
+
 
     <script>
       var canvas = document.querySelector("#unity-canvas");
