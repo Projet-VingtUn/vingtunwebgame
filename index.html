@@ -25,37 +25,54 @@
     </div>
 
     <!-- 🔐 AJOUT : bridge JS minimal -->
-    <script>
-      var unityInstanceRef = null;
+  <script>
+  var unityInstanceRef = null;
+  var autoLoginTries = 0;
+  var MAX_TRIES = 10; // ~5 secondes
 
-      // appelée UNIQUEMENT par Unity via UnityReady() (.jslib)
-      function UnityReady_JS() {
-        console.log("[JS] UnityReady reçu");
+  function UnityReady_JS() {
+    tryAutoLogin();
+  }
 
-        if (!unityInstanceRef) {
-          console.warn("[JS] Unity instance non prête");
-          return;
-        }
+  function tryAutoLogin() {
+    if (!unityInstanceRef) return;
 
-        var token = localStorage.getItem('token');
+    var token = localStorage.getItem("token");
+    console.log("[JS] token =", token);
 
-console.log("[JS] token =", token);
-        if (token) {
-          console.log("[JS] Token trouvé → auto-login");
-          unityInstanceRef.SendMessage(
-            "WebAutoLogin",
-            "OnReceiveToken",
-            token
-          );
-        } else {
-          console.log("[JS] Aucun token → login manuel");
-          unityInstanceRef.SendMessage(
-            "WebAutoLogin",
-            "ShowLogin"
-          );
-        }
-      }
-    </script>
+    if (token) {
+      console.log("[JS] Token trouvé → auto-login");
+      unityInstanceRef.SendMessage(
+        "WebAutoLogin",
+        "OnReceiveToken",
+        token
+      );
+      return;
+    }
+
+    autoLoginTries++;
+
+    if (autoLoginTries < MAX_TRIES) {
+      console.log("[JS] Token absent, retry...", autoLoginTries);
+      setTimeout(tryAutoLogin, 500);
+    } else {
+      console.log("[JS] Token toujours absent → login manuel");
+      unityInstanceRef.SendMessage(
+        "WebAutoLogin",
+        "ShowLogin"
+      );
+    }
+  }
+</script>
+
+<script>
+  function PrintToken_JS() {
+    var token = localStorage.getItem("token");
+    console.log("[JS] TOKEN =", token);
+    return token;
+  }
+</script>
+
 
     <script>
       var canvas = document.querySelector("#unity-canvas");
