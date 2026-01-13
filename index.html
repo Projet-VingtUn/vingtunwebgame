@@ -128,14 +128,14 @@
   if (token) {
     console.log("Token trouvé, envoi à Unity");
     unityInstance.SendMessage(
-      "AuthManager",      // GameObject
+      "WebAutoLogin",      // GameObject
       "OnReceiveToken",   // Méthode C#
       token
     );
   } else {
     console.log("Aucun token, affichage login");
     unityInstance.SendMessage(
-      "AuthManager",
+      "WebAutoLogin",
       "ShowLogin"
     );
   }
