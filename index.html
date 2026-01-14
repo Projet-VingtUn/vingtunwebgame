@@ -9,6 +9,14 @@
 </head>
 
 <body>
+
+  <!-- 🔍 LOG DE VÉRIFICATION DU BON FICHIER -->
+  <script>
+    console.log("### INDEX UNITY POSTMESSAGE DEBUG LOADED ###");
+    console.log("[JS] location.href =", location.href);
+    console.log("[JS] location.origin =", location.origin);
+  </script>
+
   <div id="unity-container" class="unity-desktop">
     <canvas id="unity-canvas" width="960" height="600" tabindex="-1"></canvas>
     <div id="unity-loading-bar">
@@ -26,40 +34,61 @@
   </div>
 
   <!-- 🔐 Référence Unity -->
- <script>
-  var unityInstanceRef = null;
-  var pendingAuthToken = null;
+  <script>
+    var unityInstanceRef = null;
+    var pendingAuthToken = null;
 
-  // Réception du token depuis le site parent (React)
-  window.addEventListener("message", function (event) {
-    if (event.origin !== "https://vingt1.com") return;
+    console.log("[JS] Bridge postMessage initialisé");
 
-    if (event.data && event.data.type === "AUTH_TOKEN") {
-      console.log("[JS] Token reçu du site parent");
+    // Réception du token depuis le site parent (React)
+    window.addEventListener("message", function (event) {
+      console.log("[JS] message event reçu :", event.origin, event.data);
 
-      pendingAuthToken = event.data.token;
-
-      // Si Unity est déjà prête → on envoie immédiatement
-      if (unityInstanceRef) {
-        sendTokenToUnity();
+      if (event.origin !== "https://vingt1.com") {
+        console.warn("[JS] origin refusée :", event.origin);
+        return;
       }
+
+      if (event.data && event.data.type === "AUTH_TOKEN") {
+        console.log("[JS] AUTH_TOKEN reçu");
+
+        pendingAuthToken = event.data.token;
+        console.log("[JS] pendingAuthToken set =", !!pendingAuthToken);
+
+        // Si Unity est déjà prête → on envoie immédiatement
+        if (unityInstanceRef) {
+          console.log("[JS] Unity déjà prête → envoi immédiat");
+          sendTokenToUnity();
+        } else {
+          console.log("[JS] Unity pas encore prête → token en attente");
+        }
+      }
+    });
+
+    function sendTokenToUnity() {
+      console.log("[JS] sendTokenToUnity() appelé");
+
+      if (!unityInstanceRef) {
+        console.warn("[JS] unityInstanceRef NULL");
+        return;
+      }
+
+      if (!pendingAuthToken) {
+        console.warn("[JS] pendingAuthToken NULL");
+        return;
+      }
+
+      console.log("[JS] Envoi du token à Unity");
+      unityInstanceRef.SendMessage(
+        "WebAutoLogin",
+        "OnReceiveToken",
+        pendingAuthToken
+      );
+
+      pendingAuthToken = null;
+      console.log("[JS] pendingAuthToken reset");
     }
-  });
-
-  function sendTokenToUnity() {
-    if (!unityInstanceRef || !pendingAuthToken) return;
-
-    console.log("[JS] Envoi du token à Unity");
-    unityInstanceRef.SendMessage(
-      "WebAutoLogin",
-      "OnReceiveToken",
-      pendingAuthToken
-    );
-
-    // optionnel : éviter les doublons
-    pendingAuthToken = null;
-  }
-</script>
+  </script>
 
   <!-- 🔧 Unity loader -->
   <script>
@@ -114,19 +143,24 @@
     var script = document.createElement("script");
     script.src = loaderUrl;
     script.onload = () => {
+      console.log("[JS] Loader Unity chargé");
+
       createUnityInstance(canvas, config, (progress) => {
         document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
       }).then((unityInstance) => {
+        console.log("[JS] Unity instance prête");
+
         unityInstanceRef = unityInstance;
 
-          // 🔑 SI le token est déjà arrivé → on l’envoie maintenant
-  sendTokenToUnity();
-  
+        // 🔑 SI le token est déjà arrivé → on l’envoie maintenant
+        sendTokenToUnity();
+
         document.querySelector("#unity-loading-bar").style.display = "none";
         document.querySelector("#unity-fullscreen-button").onclick = () => {
           unityInstance.SetFullscreen(1);
         };
       }).catch((message) => {
+        console.error("[JS] Erreur Unity", message);
         alert(message);
       });
     };
