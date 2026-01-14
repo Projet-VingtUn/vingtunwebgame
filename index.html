@@ -1,192 +1,137 @@
 <!DOCTYPE html>
 <html lang="en-us">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity Web Player | Vingt1</title>
-    <link rel="shortcut icon" href="TemplateData/favicon.ico">
-    <link rel="stylesheet" href="TemplateData/style.css">
-  </head>
-  <body>
-    <div id="unity-container" class="unity-desktop">
-      <canvas id="unity-canvas" width=960 height=600 tabindex="-1"></canvas>
-      <div id="unity-loading-bar">
-        <div id="unity-logo"></div>
-        <div id="unity-progress-bar-empty">
-          <div id="unity-progress-bar-full"></div>
-        </div>
-      </div>
-      <div id="unity-warning"> </div>
-      <div id="unity-footer">
-        <div id="unity-logo-title-footer"></div>
-        <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">Vingt1</div>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Unity Web Player | Vingt1</title>
+  <link rel="shortcut icon" href="TemplateData/favicon.ico">
+  <link rel="stylesheet" href="TemplateData/style.css">
+</head>
+
+<body>
+  <div id="unity-container" class="unity-desktop">
+    <canvas id="unity-canvas" width="960" height="600" tabindex="-1"></canvas>
+    <div id="unity-loading-bar">
+      <div id="unity-logo"></div>
+      <div id="unity-progress-bar-empty">
+        <div id="unity-progress-bar-full"></div>
       </div>
     </div>
+    <div id="unity-warning"></div>
+    <div id="unity-footer">
+      <div id="unity-logo-title-footer"></div>
+      <div id="unity-fullscreen-button"></div>
+      <div id="unity-build-title">Vingt1</div>
+    </div>
+  </div>
 
-    <!-- 🔐 AJOUT : bridge JS minimal -->
-  <script>
+  <!-- 🔐 Référence Unity -->
+ <script>
   var unityInstanceRef = null;
-  var autoLoginTries = 0;
-  var MAX_TRIES = 10; // ~5 secondes
+  var pendingAuthToken = null;
 
-  function UnityReady_JS() {
-    tryAutoLogin();
-  }
+  // Réception du token depuis le site parent (React)
+  window.addEventListener("message", function (event) {
+    if (event.origin !== "https://vingt1.com") return;
 
-  function tryAutoLogin() {
-    if (!unityInstanceRef) return;
+    if (event.data && event.data.type === "AUTH_TOKEN") {
+      console.log("[JS] Token reçu du site parent");
 
-    var token = localStorage.getItem("token");
+      pendingAuthToken = event.data.token;
 
-     console.log("objet",  Object.keys(localStorage));
-    console.log("location.origin", location.origin);
-    console.log("[JS] token =", token);
-   
-
-
-    if (token) {
-      console.log("[JS] Token trouvé → auto-login");
-      unityInstanceRef.SendMessage(
-        "WebAutoLogin",
-        "OnReceiveToken",
-        token
-      );
-      return;
-    }
-
-    autoLoginTries++;
-
-    if (autoLoginTries < MAX_TRIES) {
-      console.log("[JS] Token absent, retry...", autoLoginTries);
-      setTimeout(tryAutoLogin, 500);
-    } else {
-      console.log("[JS] Token toujours absent → login manuel");
-      unityInstanceRef.SendMessage(
-        "WebAutoLogin",
-        "ShowLogin"
-      );
-    }
-  }
-</script>
-
-<script>
-  function PrintToken_JS() {
-
-    console.log("token brut =", localStorage.token);
-console.log("token type =", typeof localStorage.getItem("token"));
-      console.log("objet",  Object.keys(localStorage));
-    console.log("location.origin", location.origin);
-    var token = localStorage.getItem("token");
-
-    console.log("[JS] token =", token); 
-    return token;
-  }
-</script>
-
-<script>
-  // 🔁 Écoute quand le token arrive PLUS TARD
-  window.addEventListener("storage", function (e) {
-    if (e.key === "token" && e.newValue && unityInstanceRef) {
-      console.log("[JS] Token détecté via storage event");
-      unityInstanceRef.SendMessage(
-        "WebAutoLogin",
-        "OnReceiveToken",
-        e.newValue
-      );
+      // Si Unity est déjà prête → on envoie immédiatement
+      if (unityInstanceRef) {
+        sendTokenToUnity();
+      }
     }
   });
-</script>
 
-<script>
-  function notifyUnityTokenChanged() {
-    if (!unityInstanceRef) return;
+  function sendTokenToUnity() {
+    if (!unityInstanceRef || !pendingAuthToken) return;
 
-    var token = localStorage.getItem("token");
-    if (token) {
-      console.log("[JS] Token détecté (manual notify)");
-      unityInstanceRef.SendMessage(
-        "WebAutoLogin",
-        "OnReceiveToken",
-        token
-      );
-    }
+    console.log("[JS] Envoi du token à Unity");
+    unityInstanceRef.SendMessage(
+      "WebAutoLogin",
+      "OnReceiveToken",
+      pendingAuthToken
+    );
+
+    // optionnel : éviter les doublons
+    pendingAuthToken = null;
   }
 </script>
 
+  <!-- 🔧 Unity loader -->
+  <script>
+    var canvas = document.querySelector("#unity-canvas");
 
-
-    <script>
-      var canvas = document.querySelector("#unity-canvas");
-
-      function unityShowBanner(msg, type) {
-        var warningBanner = document.querySelector("#unity-warning");
-        function updateBannerVisibility() {
-          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
-        }
-        var div = document.createElement('div');
-        div.innerHTML = msg;
-        warningBanner.appendChild(div);
-        if (type == 'error') div.style = 'background: red; padding: 10px;';
-        else {
-          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-          setTimeout(function() {
-            warningBanner.removeChild(div);
-            updateBannerVisibility();
-          }, 5000);
-        }
-        updateBannerVisibility();
+    function unityShowBanner(msg, type) {
+      var warningBanner = document.querySelector("#unity-warning");
+      function updateBannerVisibility() {
+        warningBanner.style.display = warningBanner.children.length ? "block" : "none";
       }
-
-      var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/Build Web with MULTI.loader.js";
-      var config = {
-        arguments: [],
-        dataUrl: buildUrl + "/Build Web with MULTI.data",
-        frameworkUrl: buildUrl + "/Build Web with MULTI.framework.js",
-        codeUrl: buildUrl + "/Build Web with MULTI.wasm",
-        streamingAssetsUrl: "StreamingAssets",
-        companyName: "eeruscap",
-        productName: "Vingt1",
-        productVersion: "1.0.0",
-        showBanner: unityShowBanner,
-      };
-
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
-        document.querySelector("#unity-container").className = "unity-mobile";
-        canvas.className = "unity-mobile";
-      } else {
-        canvas.style.width = "960px";
-        canvas.style.height = "600px";
+      var div = document.createElement("div");
+      div.innerHTML = msg;
+      warningBanner.appendChild(div);
+      if (type === "error") div.style = "background:red;padding:10px;";
+      else {
+        if (type === "warning") div.style = "background:yellow;padding:10px;";
+        setTimeout(function () {
+          warningBanner.removeChild(div);
+          updateBannerVisibility();
+        }, 5000);
       }
+      updateBannerVisibility();
+    }
 
-      document.querySelector("#unity-loading-bar").style.display = "block";
+    var buildUrl = "Build";
+    var loaderUrl = buildUrl + "/Build Web with MULTI.loader.js";
+    var config = {
+      dataUrl: buildUrl + "/Build Web with MULTI.data",
+      frameworkUrl: buildUrl + "/Build Web with MULTI.framework.js",
+      codeUrl: buildUrl + "/Build Web with MULTI.wasm",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "eeruscap",
+      productName: "Vingt1",
+      productVersion: "1.0.0",
+      showBanner: unityShowBanner,
+    };
 
-      var script = document.createElement("script");
-      script.src = loaderUrl;
-      script.onload = () => {
-        createUnityInstance(canvas, config, (progress) => {
-          document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
-        }).then((unityInstance) => {
+    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      var meta = document.createElement("meta");
+      meta.name = "viewport";
+      meta.content = "width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes";
+      document.getElementsByTagName("head")[0].appendChild(meta);
+      document.querySelector("#unity-container").className = "unity-mobile";
+      canvas.className = "unity-mobile";
+    } else {
+      canvas.style.width = "960px";
+      canvas.style.height = "600px";
+    }
 
-          // 🔐 AJOUT : on stocke l’instance Unity
-          unityInstanceRef = unityInstance;
+    document.querySelector("#unity-loading-bar").style.display = "block";
 
-          document.querySelector("#unity-loading-bar").style.display = "none";
-          document.querySelector("#unity-fullscreen-button").onclick = () => {
-            unityInstance.SetFullscreen(1);
-          };
+    var script = document.createElement("script");
+    script.src = loaderUrl;
+    script.onload = () => {
+      createUnityInstance(canvas, config, (progress) => {
+        document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
+      }).then((unityInstance) => {
+        unityInstanceRef = unityInstance;
 
-        }).catch((message) => {
-          alert(message);
-        });
-      };
+          // 🔑 SI le token est déjà arrivé → on l’envoie maintenant
+  sendTokenToUnity();
+  
+        document.querySelector("#unity-loading-bar").style.display = "none";
+        document.querySelector("#unity-fullscreen-button").onclick = () => {
+          unityInstance.SetFullscreen(1);
+        };
+      }).catch((message) => {
+        alert(message);
+      });
+    };
 
-      document.body.appendChild(script);
-    </script>
-  </body>
+    document.body.appendChild(script);
+  </script>
+</body>
 </html>
