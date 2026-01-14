@@ -79,6 +79,7 @@
       }
 
       console.log("[JS] Envoi du token à Unity");
+      console.log("[pendingAuthToken]", pendingAuthToken);
       unityInstanceRef.SendMessage(
         "WebAutoLogin",
         "OnReceiveToken",
