@@ -6,6 +6,16 @@
   <title>Unity Web Player | Vingt1</title>
   <link rel="shortcut icon" href="TemplateData/favicon.ico">
   <link rel="stylesheet" href="TemplateData/style.css">
+
+  <style>
+  #unity-progress-text {
+    margin-top: 8px;
+    color: white;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    text-align: center;
+  }
+</style>
 </head>
 
 <body>
@@ -24,6 +34,7 @@
       <div id="unity-progress-bar-empty">
         <div id="unity-progress-bar-full"></div>
       </div>
+      <div id="unity-progress-text">0%</div>
     </div>
     <div id="unity-warning"></div>
     <div id="unity-footer">
@@ -138,6 +149,9 @@
       canvas.style.height = "600px";
     }
 
+        // 🖼 Image de fond (mets Mini Coupe.jpg dans le même dossier que index.html)
+        canvas.style.background = "url('bg.png') center / cover";
+
     document.querySelector("#unity-loading-bar").style.display = "block";
 
     var script = document.createElement("script");
@@ -145,16 +159,19 @@
     script.onload = () => {
       console.log("[JS] Loader Unity chargé");
 
-      createUnityInstance(canvas, config, (progress) => {
-        document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
-      }).then((unityInstance) => {
+   createUnityInstance(canvas, config, (progress) => {
+  const percent = Math.round(progress * 100);
+
+  document.querySelector("#unity-progress-bar-full").style.width = percent + "%";
+  document.querySelector("#unity-progress-text").innerText = percent + "%";
+}).then((unityInstance) => {
         console.log("[JS] Unity instance prête");
 
         unityInstanceRef = unityInstance;
 
         // 🔑 SI le token est déjà arrivé → on l’envoie maintenant
         sendTokenToUnity();
-
+document.querySelector("#unity-progress-text").innerText = "100%";
         document.querySelector("#unity-loading-bar").style.display = "none";
         document.querySelector("#unity-fullscreen-button").onclick = () => {
           unityInstance.SetFullscreen(1);
