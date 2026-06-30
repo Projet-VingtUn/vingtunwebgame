@@ -125,17 +125,30 @@
     }
 
     var buildUrl = "Build";
-    var loaderUrl = buildUrl + "/Build Web with MULTI.loader.js";
+    var loaderUrl = buildUrl + "/Build.loader.js.gz"; // Nom simplifié
     var config = {
-      dataUrl: buildUrl + "/Build Web with MULTI.data",
-      frameworkUrl: buildUrl + "/Build Web with MULTI.framework.js",
-      codeUrl: buildUrl + "/Build Web with MULTI.wasm",
+      dataUrl: buildUrl + "/Build.data.gz",
+      frameworkUrl: buildUrl + "/Build.framework.js.gz",
+      codeUrl: buildUrl + "/Build.wasm.gz",
       streamingAssetsUrl: "StreamingAssets",
       companyName: "eeruscap",
       productName: "Vingt1",
       productVersion: "1.0.0",
       showBanner: unityShowBanner,
-    };
+    };  
+
+    // var buildUrl = "Build";
+    // var loaderUrl = buildUrl + "/Build Web with MULTI.loader.js";
+    // var config = {
+    //   dataUrl: buildUrl + "/Build Web with MULTI.data",
+    //   frameworkUrl: buildUrl + "/Build Web with MULTI.framework.js",
+    //   codeUrl: buildUrl + "/Build Web with MULTI.wasm",
+    //   streamingAssetsUrl: "StreamingAssets",
+    //   companyName: "eeruscap",
+    //   productName: "Vingt1",
+    //   productVersion: "1.0.0",
+    //   showBanner: unityShowBanner,
+    // };
 
     if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
       var meta = document.createElement("meta");
